@@ -3,8 +3,24 @@ from cpolymer.polymer import Polymer
 from cpolymer.lsimu import LSimu
 from cpolymer.constrain import Box, Sphere, Point
 
-from cpolymer.halley.constrain import Spherical
+from cpolymer.halley.constrain import Spherical, Nowhere
 from cpolymer.halley.vectors import V
+
+# Define all the possible interaction between three monomers
+# 0 if interactions with nucleole else equal to one
+Anglebond = 0
+keyl = ["1", "2", "3", "4", "5"]
+langle = {}
+for key1 in keyl:
+    for key2 in keyl:
+        if int(key1) <= int(key2):
+            for key3 in keyl:
+                if int(key2) <= int(key3):
+                    Anglebond += 1
+                    if (int(key1) == 4 or int(key2) == 4 or int(key3) == 4):
+                        langle[key1 + "-" + key2 + "-" + key3] = [0, Anglebond]
+                    else:
+                        langle[key1 + "-" + key2 + "-" + key3] = [1, Anglebond]
 
 len_chrom = [46, 162, 63, 306, 115, 54, 218, 112, 87, 149, 133, 365, 184, 156, 218, 189]
 dist_centro = [30, 47, 22, 89, 30, 29, 99, 21, 71, 87, 88, 30, 53, 125, 65, 111]
@@ -48,6 +64,8 @@ for X in range(Nchromosomes):
     if X != 11:
         Sim.add(Polymer(N=len_chrom[X], type_bead=[2] + [1] * (d1 - 2) + [3] + [1] * (d2 - 1) + [2],
                         liaison=liaison,
+                        angle_bond=True,
+                        angle_def=langle,
                         gconstrain=[nucleus],
                         lconstrain=[Point(index=0, position=telo1._v),
                                     Point(index=d1, position=centromere._v),
@@ -57,19 +75,19 @@ for X in range(Nchromosomes):
         Sim.add(Polymer(N=len_chrom[X], type_bead=[2] + [1] * (d1 - 2) + [3] + [1] * (90 - d1) + [4] * 150 + \
                                                   [1] * (len_chrom[X] - 150 - 90 - 1) + [2],
                         liaison=liaison,
+                        angle_bond=True,
+                        angle_def=langle,
                         gconstrain=[nucleus],
                         lconstrain=[Point(index=0, position=telo1._v),
                                     Point(index=d1, position=centromere._v),
                                     Point(index=90 + 75, position=(0.66 * Radius, 0, 0)),
-                                    # We add a new constrain: the center
-                                    # of the nucleole must be at 2/3 of
+                                    # We add a new constraint: the center
+                                    # of the nucleolus must be at 2/3 of
                                     # the radius at the
                                     # opposite of the spb:
                                     Point(index=len_chrom[X] - 1, position=telo2._v)]))
 
 # Then Add the spb
-
-
 Sim.add(Polymer(N=1, type_bead=5, liaison=liaison))
 Sim.molecules[-1].coords = np.array([[-Radius, 0, 0]])
 
@@ -78,14 +96,18 @@ for i, c in enumerate(dist_centro, 1):
         Sim.add_extra_bond(mol1=[len(Sim.molecules), 1], mol2=[i, c], typeb=liaison["3-5"][1])
 
 simsoft = LSimu()
-print(liaison)
-
 for k, (bond_size, bond_type) in liaison.items():
     simsoft.add_bond(typeb="harmonic", idbond=bond_type, K=350, R0=bond_size)
 
     if bond_size != 0:
-        Sim.add_bond(typeb="fene", idbond=bond_type, K=30. / (bond_size * bond_size),
-                     R0=1.5 * bond_size, epsilon=1, sigma=bond_size)
+        Sim.add_bond(
+            typeb="fene",
+            idbond=bond_type,
+            K=30. / (bond_size * bond_size),
+            R0=1.5 * bond_size,
+            epsilon=1,
+            sigma=bond_size
+        )
     else:
         Sim.add_bond(typeb="harmonic", idbond=bond_type, K=0, R0=0)
 
@@ -101,8 +123,15 @@ for k, (bond_size, bond_type) in liaison.items():
 
 Sim.add_box(Box([-1.1 * Radius, -1.1 * Radius, -1.1 * Radius], [1.1 * Radius, 1.1 * Radius, 1.1 * Radius]))
 
-#Now we have to create a template for the simulation.
-Template="""
+khun = 2
+for idl, value in langle.items():
+    K, idangle = value
+    idpair1, idpair2, idpair3 = map(int, idl.split("-"))
+    k = khun / 2. * K  # dist = 1 if no ribo involved else 0
+    Sim.add_angle(typea="harmonic", idangle=idangle, K=k, theta=180)
+
+# Now we have to create a template for the simulation.
+Template = """
 ################################
 #Template
 #Must contain the variables
@@ -183,6 +212,9 @@ fix		1 particle nve/limit 0.05
 run 30000
 
 include $interaction
+
+dump Hic all local 1000 dump.hic_*.cfg c_hicp[1] c_hicp[2] c_hic
+
 thermo_style	custom step temp 
 thermo          10000
 fix		1 particle nve/limit 0.05
@@ -192,7 +224,8 @@ run		$run_length
 
 write_data $outfile
 """
-with open("tscript","w") as f:
+
+with open("tscript", "w") as f:
     f.writelines(Template)
 
 # Then let's generate all the files needed to run the simulation:
@@ -204,11 +237,18 @@ Sim.generate_pdb(REP + "/%snoyau2.pdb" % cell,
 Sim.generate_interactions(REP + "/interactions", info_bond=["special_bonds fene"])
 simsoft.generate_interactions(REP + "/softinteractions")
 
-Sim.generate_script(REP + "/nucleus_init.txt", template_name="./tscript", outfile="final.xyz",
-                    outtraj="dump_init", samplingrate=10000, run_length=1000000,
-                    interaction="interactions",
-                    softinteractions="softinteractions", typecell=cell,
-                    radius=Radius)
+Sim.generate_script(
+    REP + "/nucleus_init.txt",
+    template_name="./tscript",
+    outfile="final.xyz",
+    outtraj="dump_init",
+    samplingrate=5000,
+    run_length=100000,
+    interaction="interactions",
+    softinteractions="softinteractions",
+    typecell=cell,
+    radius=Radius
+)
 
 r = Sim.run("nucleus_init.txt")
 print(r)
