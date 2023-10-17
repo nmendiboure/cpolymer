@@ -51,7 +51,9 @@ from .vectors import V, zero, equal, EPSILON
 import math
 from math import sqrt
 import random
-#----------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------
 
 
 class Constraint:
@@ -73,10 +75,11 @@ class Constraint:
 
     def __bool__(self): return True
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 
-class Anywhere (Constraint):
+class Anywhere(Constraint):
     '''If a point is completely unconstrained, it can be Anywhere.'''
 
     def __repr__(self): return "Anywhere()"
@@ -93,10 +96,11 @@ class Anywhere (Constraint):
         "Any point is accepted."
         return True
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 
-class Nowhere (Constraint):
+class Nowhere(Constraint):
     "If constraints on a point are inconsistent, it can be Nowhere."
 
     def __repr__(self): return "Nowhere()"
@@ -115,10 +119,11 @@ class Nowhere (Constraint):
         "No point is accepted."
         return False
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 
-class Unity (Constraint):
+class Unity(Constraint):
     "If a point can only be in a single place, this constraint is a Unity."
 
     def __init__(self, point):
@@ -141,10 +146,11 @@ class Unity (Constraint):
         "One point is accepted."
         return self.point == point
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 
-class Duality (Constraint):
+class Duality(Constraint):
     "If a point can only be in one of two places, this is a Duality."
 
     def __init__(self, pointA, pointB):
@@ -185,7 +191,8 @@ class Duality (Constraint):
             return True
         return False
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 
 def is_point_on_line(la, dir, p):
@@ -206,10 +213,10 @@ def is_point_on_line(la, dir, p):
 def closest_point_on_line(la, dir, p):
     off = p - la
     det = off.dot(dir) / dir.dot(dir)
-    return la + dir*det
+    return la + dir * det
 
 
-class Linear (Constraint):
+class Linear(Constraint):
     "A Linear constraint allows a point anywhere along an infinite line."
 
     def __init__(self, pointA, pointB):
@@ -274,7 +281,7 @@ class Linear (Constraint):
             dist = crossO[1] / crossSO[1]
         elif not zero(crossAB[0]):  # else:
             dist = crossO[0] / crossSO[0]
-        return Unity(self.pointA + (dirS*dist))
+        return Unity(self.pointA + (dirS * dist))
 
     def closest(self, point):
         "A point on the line is returned."
@@ -334,7 +341,8 @@ def _linear_linear_test():
     c1 = Linear(u, v)
     __ok__(str(c1 * c2) == str(c1))
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 
 def distance_from_plane(ppoint, normal, p):
@@ -349,7 +357,7 @@ def is_point_on_plane(ppoint, normal, p):
 
 def closest_point_on_plane(ppoint, normal, p):
     dist = distance_from_plane(ppoint, normal, p)
-    return p - normal*dist
+    return p - normal * dist
 
 
 def intersect_plane_and_line(ppoint, normal, p, dir):
@@ -357,11 +365,11 @@ def intersect_plane_and_line(ppoint, normal, p, dir):
     dot = normal.dot(dir)
     dots = normal.dot(ppoint) - normal.dot(p)
     alpha = dots / dot
-    intersect = p + dir*alpha
+    intersect = p + dir * alpha
     return intersect
 
 
-class Planar (Constraint):
+class Planar(Constraint):
     "A Planar constraint allows a point anywhere on an infinite plane."
 
     def __init__(self, point, normal):
@@ -369,8 +377,8 @@ class Planar (Constraint):
         self.point = V(point)
         self.normal = V(normal).normalize()
         self.d = self.normal.dot(self.point)
-        #d = -distance_from_plane(self.point, self.normal, V())
-        #__ok__(equal(d, self.d))
+        # d = -distance_from_plane(self.point, self.normal, V())
+        # __ok__(equal(d, self.d))
 
     def __repr__(self):
         return "Planar" + repr((self.point, self.normal))
@@ -452,27 +460,28 @@ def _planar_linear_test():
     p = Planar(V(3, 0, -1), V(0, 3, 0))
     __ok__(str(p) == "Planar(V(3.0, 0.0, -1.0), V(0.0, 1.0, 0.0))")
     l = Linear(V(2, 1, 1), V(0, -1, 1))
-    u = p*l
+    u = p * l
     __ok__(str(u) == "Unity(V(1.0, 0.0, 1.0))")
     p = Planar(V(3, -7, -1), V(1, 1, 0))
-    __ok__(equal(sqrt(2)/2, p.normal[1]))
+    __ok__(equal(sqrt(2) / 2, p.normal[1]))
 
 
 def _planar_planar_test():
     from testing import __ok__
     p = Planar(V(3, 0, -1), V(0, 3, 0))
     q = Planar(V(5, 0, -5), V(1, 1, 0))
-    pq = p*q
+    pq = p * q
     __ok__(isinstance(pq, Linear))
     __ok__(equal(pq.pointB[1], pq.pointA[1]))
     q = Planar(V(5, 0, -5), V(0, 1, 0))
-    pq = p*q
+    pq = p * q
     __ok__(pq is p)
     q = Planar(V(5, 1, -5), V(0, 1, 0))
-    pq = p*q
+    pq = p * q
     __ok__(isinstance(pq, Nowhere))
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 
 def is_point_on_circle(center, normal, radius, p):
@@ -491,7 +500,7 @@ def closest_point_on_circle(center, normal, radius, p):
     return center + spoke
 
 
-class Circular (Constraint):
+class Circular(Constraint):
     "A Circular constraint allows a point anywhere along a circle's edge."
 
     def __init__(self, point, normal, radius):
@@ -514,7 +523,7 @@ class Circular (Constraint):
         x0 = x0.normalize()
         self.normal = self.normal.normalize()
         x1 = self.normal.cross(x0)
-        alpha = 2*math.pi*random.random()
+        alpha = 2 * math.pi * random.random()
         return self.point + self.radius * (x0 * math.cos(alpha) + x1 * math.sin(alpha))
 
     def generate_N(self, N):
@@ -525,7 +534,7 @@ class Circular (Constraint):
         x0 = x0.normalize()
         self.normal = self.normal.normalize()
         x1 = self.normal.cross(x0)
-        alphas = [(2*3.1415*i)/N for i in range(N)]
+        alphas = [(2 * 3.1415 * i) / N for i in range(N)]
         return [self.point + self.radius * (x0 * math.cos(alpha) + x1 * math.sin(alpha)) for alpha in alphas]
 
     def combine(self, other):
@@ -613,17 +622,17 @@ class Circular (Constraint):
                 return self
             return Nowhere()
         # tangent?
-        if equal(d, rS+rO):
+        if equal(d, rS + rO):
             cc = cc.magnitude(rS)
             return Unity(self.point + cc)
         # find the midpoint where the "radical line" (chord) crosses cc
-        term = d*d - rS*rS + rO*rO
-        xS = term / 2*d
+        term = d * d - rS * rS + rO * rO
+        xS = term / 2 * d
         xO = d - xS
         # find the length of the radical line
-        leg = 4*d*d*rS*rS - term*term
-        yy = 1/d * sqrt(leg)
-        y = yy/2
+        leg = 4 * d * d * rS * rS - term * term
+        yy = 1 / d * sqrt(leg)
+        y = yy / 2
         # find the intersection points
         cross = cc * self.normal
         chord = cc * cross
@@ -648,11 +657,11 @@ def _circular_linear_test():
     from testing import __ok__
     c = Circular(V(), V.Y, 1)
     l = Linear(V.Y, V(2, -1, 0))
-    __ok__(str(c*l) == "Unity(V(1.0, 0.0, 0.0))")
+    __ok__(str(c * l) == "Unity(V(1.0, 0.0, 0.0))")
     l = Linear(V.Y, -V.Y)
-    __ok__(str(c*l) == "Nowhere()")
+    __ok__(str(c * l) == "Nowhere()")
     l = Linear(V(0.5, 0, 0.5), V(0.5, 0, -0.5))
-    cl = c*l
+    cl = c * l
     __ok__(isinstance(cl, Duality))
     __ok__(cl.pointA[0] == cl.pointB[0])
 
@@ -680,7 +689,7 @@ def _circular_planar_test():
     p = Planar(V(0, .5, 0), V(1, 1, 0))
     cp = c * p
     __ok__(isinstance(cp, Duality))
-    __ok__(equal(abs(cp.pointA[2]), 0.5*sqrt(3)))
+    __ok__(equal(abs(cp.pointA[2]), 0.5 * sqrt(3)))
 
 
 def _circular_circular_test():
@@ -698,9 +707,10 @@ def _circular_circular_test():
     __ok__(isinstance(c1c2, Duality))
     __ok__(c1c2.pointA[0] == c1c2.pointB[0])
     __ok__(equal(c1c2.pointA[1], -c1c2.pointB[1]))
-    __ok__(equal(abs(c1c2.pointA[1]), 0.5*sqrt(3)))
+    __ok__(equal(abs(c1c2.pointA[1]), 0.5 * sqrt(3)))
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 
 def is_point_on_sphere(center, r, p):
@@ -715,7 +725,7 @@ def closest_point_on_sphere(center, r, p):
     return center + dir
 
 
-class Spherical (Constraint):
+class Spherical(Constraint):
     "A Spherical constraint allows a point anywhere on a sphere's surface."
 
     def __init__(self, point, radius):
@@ -730,10 +740,10 @@ class Spherical (Constraint):
 
     def get_random(self):
 
-        phi = 2*math.pi*random.random()
-        theta = math.pi*random.random()
-        return self.point + self.radius * (V([math.sin(theta)*math.cos(phi),
-                                              math.sin(theta)*math.sin(phi),
+        phi = 2 * math.pi * random.random()
+        theta = math.pi * random.random()
+        return self.point + self.radius * (V([math.sin(theta) * math.cos(phi),
+                                              math.sin(theta) * math.sin(phi),
                                               math.cos(theta)]))
 
     def combine(self, other):
@@ -802,30 +812,30 @@ class Spherical (Constraint):
                 return self
             return Nowhere()
         # tangent?
-        if equal(d, rS+rO):
+        if equal(d, rS + rO):
             cc = cc.magnitude(rS)
             return Unity(self.point + cc)
-        if max(rS, rO) - (d+min(rO, rS)) > 0:
+        if max(rS, rO) - (d + min(rO, rS)) > 0:
             # One sphere included in another
             return Nowhere()
         # find the midpoint where the "radical line" (chord) crosses cc
-        #print d,rS,rO
-        #print rS - (d+rO)
-        term = d*d - rS*rS + rO*rO
-        #print term
-        #term =  rS*rS - rO*rO
-        xS = term / (2*d)
-        #print xS
+        # print d,rS,rO
+        # print rS - (d+rO)
+        term = d * d - rS * rS + rO * rO
+        # print term
+        # term =  rS*rS - rO*rO
+        xS = term / (2 * d)
+        # print xS
         xO = d - xS
         # find the length of the radical line
-        #leg = 4*d*d*rS*rS - term*term
-        #yy = 1/d * sqrt(leg)
-        #y = yy/2
-        y = sqrt(rS*rS-xO*xO)
+        # leg = 4*d*d*rS*rS - term*term
+        # yy = 1/d * sqrt(leg)
+        # y = yy/2
+        y = sqrt(rS * rS - xO * xO)
         # find the intersection points
 
         cc.normalize()
-        #print cc,xS
+        # print cc,xS
         mark = cc
         mark = mark.magnitude(xO)
         mark += self.point
@@ -865,7 +875,8 @@ def _spherical_spherical_test():
     from testing import __ok__
     pass
 
-#----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 
 def __test__():

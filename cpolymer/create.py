@@ -10,12 +10,25 @@ import numpy as np
 from .proba import init_proba, init_proba_log, generate_point_proba
 
 
-def one_polymer(N=2, type_bead=1, liaison={"1-1": [1.0, 1]}, type_polymer="linear",
-                angle_bond=False, angle_def={"1-1-1": [1.0, 1]},
-                start_id=1, start_bond=0, start_angle=0,
-                ptolerance=0,
-                gconstrain=[], lconstrain=[], max_trial=300000, rc=0.5, virtual_lp=None, rigid_constrain=True,
-                flexible_lp=True):
+def one_polymer(
+        N=2,
+        type_bead=1,
+        liaison={"1-1": [1.0, 1]},
+        type_polymer="linear",
+        angle_bond=False,
+        angle_def={"1-1-1": [1.0, 1]},
+        start_id=1,
+        start_bond=0,
+        start_angle=0,
+        ptolerance=0,
+        gconstrain=[],
+        lconstrain=[],
+        max_trial=300000,
+        rc=0.5,
+        virtual_lp=None,
+        rigid_constrain=True,
+        flexible_lp=True
+):
     """
     Function to generate a polymer chain
     return coordinate list , [bond list,angle list] , type of bead list, list of id of the monomers
@@ -100,14 +113,31 @@ def one_polymer(N=2, type_bead=1, liaison={"1-1": [1.0, 1]}, type_polymer="linea
 
     coords = []
     coords.append(
-        generate_next(coords, gconstrain=gconstrain, lconstrain=lconstrain, max_trial=max_trial, bond_sizes=bond_sizes,
-                      rc=rc,
-                      virtual_lp=virtual_lp, rigid_constrain=rigid_constrain, flexible_lp=flexible_lp))
+        generate_next(
+            coords,
+            gconstrain=gconstrain,
+            lconstrain=lconstrain,
+            max_trial=max_trial,
+            bond_sizes=bond_sizes,
+            rc=rc,
+            virtual_lp=virtual_lp,
+            rigid_constrain=rigid_constrain,
+            flexible_lp=flexible_lp
+        ))
 
     for bond, lbond in zip(bonds, bond_sizes):
-        coords.append(generate_next(coords, gconstrain=gconstrain, lconstrain=lconstrain, max_trial=max_trial,
-                                    bond_sizes=bond_sizes, rc=rc,
-                                    virtual_lp=virtual_lp, rigid_constrain=rigid_constrain, flexible_lp=flexible_lp))
+        coords.append(
+            generate_next(
+                coords,
+                gconstrain=gconstrain,
+                lconstrain=lconstrain,
+                max_trial=max_trial,
+                bond_sizes=bond_sizes,
+                rc=rc,
+                virtual_lp=virtual_lp,
+                rigid_constrain=rigid_constrain,
+                flexible_lp=flexible_lp
+            ))
 
     if start_id != 0:
         bonds = [[bond[0], bond[1], bond[2] + start_id, bond[3] + start_id] for bond in bonds]
@@ -225,31 +255,28 @@ def generate_from_local_constrain(coords, bond_sizes=[], lconstrain=[], max_tria
 def generate_next(coords, gconstrain=[], lconstrain=[], max_trial=100, bond_size=1, bond_sizes=[], rc=0.1,
                   virtual_lp=None, rigid_constrain=True, flexible_lp=True):
     N = 0
-    redo = []  # The probability densitiy is generated once and then several trial are extracted from it
+    redo = []  # The probability density is generated once and then several trial are extracted from it
     virtual_lp0 = virtual_lp  # virtual_lp0 will be decrease if flexible_lp in True
     while N < max_trial:
-
         if coords == [] and lconstrain == []:
-            if gconstrain == []:
+            if not gconstrain:
                 pos = np.array([0, 0, 0])
             else:
                 pos = np.array(gconstrain[0].generate())
 
         else:
-            if flexible_lp and virtual_lp != None and N != 0 and N % int(max_trial / 5) == 0:
+            if flexible_lp and virtual_lp is not None and N != 0 and N % int(max_trial / 5) == 0:
                 virtual_lp0 /= 2.
                 redo = []
-                print(("Deacreasing virtual_lp to ", virtual_lp0))
+                print(("Decreasing virtual_lp to ", virtual_lp0))
 
-            if redo == []:
-
+            if not redo:
                 pos, redo = generate_from_local_constrain(coords, lconstrain=lconstrain, bond_sizes=bond_sizes, rc=rc,
                                                           virtual_lp=virtual_lp0, rigid_constrain=rigid_constrain)
             else:
                 pos = np.array([generate_point_proba(x, index) for x, index in redo])
 
         # check global constrain
-
         out = False
         for gc in gconstrain:
             if not gc.is_inside(pos):
