@@ -7,7 +7,7 @@ from cpolymer.halley.constrain import Spherical, Nowhere
 from cpolymer.halley.vectors import V
 
 # Define all the possible interaction between three monomers
-# 0 if interactions with nucleole else equal to one
+# 0 if interactions with nucleolus else equal to one
 Anglebond = 0
 keyl = ["1", "2", "3", "4", "5"]
 langle = {}
@@ -17,7 +17,7 @@ for key1 in keyl:
             for key3 in keyl:
                 if int(key2) <= int(key3):
                     Anglebond += 1
-                    if (int(key1) == 4 or int(key2) == 4 or int(key3) == 4):
+                    if int(key1) == 4 or int(key2) == 4 or int(key3) == 4:
                         langle[key1 + "-" + key2 + "-" + key3] = [0, Anglebond]
                     else:
                         langle[key1 + "-" + key2 + "-" + key3] = [1, Anglebond]
@@ -71,7 +71,9 @@ for X in range(Nchromosomes):
                                     Point(index=d1, position=centromere._v),
                                     Point(index=len_chrom[X] - 1, position=telo2._v)]))
     else:
-        # This chromosome is different because it has a nucleole
+        # This chromosome is different because it has a nucleolus
+        # We add a new constraint: the center of the nucleolus must be at 2/3 of the radius at the
+        # opposite of the spb:
         Sim.add(Polymer(N=len_chrom[X], type_bead=[2] + [1] * (d1 - 2) + [3] + [1] * (90 - d1) + [4] * 150 + \
                                                   [1] * (len_chrom[X] - 150 - 90 - 1) + [2],
                         liaison=liaison,
@@ -81,10 +83,6 @@ for X in range(Nchromosomes):
                         lconstrain=[Point(index=0, position=telo1._v),
                                     Point(index=d1, position=centromere._v),
                                     Point(index=90 + 75, position=(0.66 * Radius, 0, 0)),
-                                    # We add a new constraint: the center
-                                    # of the nucleolus must be at 2/3 of
-                                    # the radius at the
-                                    # opposite of the spb:
                                     Point(index=len_chrom[X] - 1, position=telo2._v)]))
 
 # Then Add the spb
