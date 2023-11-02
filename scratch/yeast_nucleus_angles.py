@@ -1,10 +1,14 @@
 import numpy as np
+import random
 from cpolymer.polymer import Polymer
 from cpolymer.lsimu import LSimu
 from cpolymer.constrain import Box, Sphere, Point
 
 from cpolymer.halley.constrain import Spherical, Nowhere
 from cpolymer.halley.vectors import V
+
+np.random.seed(42)
+random.seed(42)
 
 # Define all the possible interaction between three monomers
 # 0 if interactions with nucleolus else equal to one
